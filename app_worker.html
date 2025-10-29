@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>MTM - Pracownik</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <h1>MTM - Pracownik (Podgląd załadunków)</h1>
+  <div id="lista"></div>
+
+  <script src="/script.js"></script>
+  <script>
+    // uruchom podstawowe ładowanie
+    loadAwizacje();
+
+    // funkcje interakcyjne (dodawanie palet / zdjęć / druk)
+    async function dodajPaleteUI(awId, nrZam) {
+      const palName = prompt("Nazwa nowej palety (np. Paleta 7):");
+      if (!palName) return;
+      const res = await fetch("/api/palety", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ awizacja_id: awId, paleta_nazwa: palName })
+      });
+      const j = await res.json();
+      if (j.status === "ok") alert("Dodano paletę i wygenerowano QR");
+      loadAwizacje();
+    }
+
+    async function uploadZdjecie(awId, kodPalety) {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = async () => {
+        const file = input.files[0];
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("kod_palety", kodPalety || "");
+        fd.append("awizacja_id", awId);
+        const res = await fetch(`/api/upload/${awId}`, { method: "POST", body: fd });
+        const j = await res.json();
+        if (j.status === "ok") alert("Zdjęcie wysłane");
+        loadAwizacje();
+      };
+      input.click();
+    }
+
+    async function drukuj(awId) {
+      window.open(`/api/drukuj_qr/${awId}`, "_blank");
+    }
+
+    async function zakoncz(awId) {
+      // zmiana status bezpośrednio w DB - tutaj prosta metoda: ustawione przez skan lub admin panel
+      const confirmEnd = confirm("Zakończyć załadunek?");
+      if (!confirmEnd) return;
+      // Ustaw status via update (wektor: use awizacje update endpoint - quick SQL via /api/awizacje ? but keep lightweight)
+      alert("Zakończenie przeniesione do panelu admina (w wersji demo automatyczne po skanie).");
+    }
+  </script>
+</body>
+</html>
