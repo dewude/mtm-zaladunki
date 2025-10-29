@@ -13,28 +13,37 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "public")));
 
-const DB_FILE = path.join(__dirname, "database.db");
-const UPLOADS_DIR = path.join(__dirname, "public", "uploads");
+// Static files
+const PUBLIC_DIR = path.join(__dirname, "public");
+app.use(express.static(PUBLIC_DIR));
+
+// --- ROOT ---
+// GET / -> app_scaner.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(PUBLIC_DIR, "app_scaner.html"));
+});
+
+// Uploads folder
+const UPLOADS_DIR = path.join(PUBLIC_DIR, "uploads");
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
-// Multer upload
+// Multer storage
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: (req, file, cb) => {
     const awId = req.body.awizacja_id || req.params.awizacja_id;
     const folder = path.join(UPLOADS_DIR, String(awId));
     if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
     cb(null, folder);
   },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    cb(null, Date.now() + ext);
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
   }
 });
 const upload = multer({ storage });
 
-// SQLite init
+// --- SQLite init ---
+const DB_FILE = path.join(__dirname, "database.db");
 const db = new sqlite3.Database(DB_FILE);
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS awizacje (
@@ -131,9 +140,7 @@ app.post("/api/upload/:awizacja_id", upload.single("file"), (req, res) => {
   const filePath = req.file ? `/uploads/${awId}/${req.file.filename}` : null;
   if (!filePath) return res.status(400).json({ error: "Brak pliku" });
   const kod_palety = req.body.kod_palety;
-  if (kod_palety) {
-    db.run(`UPDATE palety SET zdjecie = ? WHERE awizacja_id = ? AND kod_qr = ?`, [filePath, awId, kod_palety]);
-  }
+  if (kod_palety) db.run(`UPDATE palety SET zdjecie = ? WHERE awizacja_id = ? AND kod_qr = ?`, [filePath, awId, kod_palety]);
   res.json({ status: "ok", file: filePath });
 });
 
@@ -177,14 +184,4 @@ app.get("/api/drukuj_qr/:awizacja_id", (req, res) => {
 // GET /uploads/:awizacja_id/:filename
 app.get("/uploads/:awizacja_id/:filename", (req, res) => {
   const file = path.join(UPLOADS_DIR, req.params.awizacja_id, req.params.filename);
-  if (!fs.existsSync(file)) return res.status(404).send("Not found");
-  res.sendFile(file);
-});
-
-// health
-app.get("/api/ping", (req, res) => res.json({ ok: true }));
-
-// start server
-app.listen(PORT, () => {
-  console.log(`Server started on http://localhost:${PORT}`);
-});
+  if (!fs.existsSync(file)) return res.status(404
