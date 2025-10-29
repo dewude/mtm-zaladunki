@@ -10,6 +10,7 @@ const PDFDocument = require("pdfkit");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -18,8 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 const PUBLIC_DIR = path.join(__dirname, "public");
 app.use(express.static(PUBLIC_DIR));
 
-// --- ROOT ---
-// GET / -> app_scaner.html
+// ROOT -> app_scaner.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(PUBLIC_DIR, "app_scaner.html"));
 });
@@ -42,7 +42,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// --- SQLite init ---
+// SQLite init
 const DB_FILE = path.join(__dirname, "database.db");
 const db = new sqlite3.Database(DB_FILE);
 db.serialize(() => {
@@ -72,10 +72,11 @@ db.serialize(() => {
 });
 
 // --- API ---
-// POST /api/awizacje
+// Dodaj awizację
 app.post("/api/awizacje", async (req, res) => {
   const { numer_auta, kierowca, telefon, nazwa_zam, nr_zam, data_awiz, godzina_awiz, ilosc_palet } = req.body;
   const palCount = parseInt(ilosc_palet || 1, 10);
+
   db.run(`INSERT INTO awizacje (numer_auta,kierowca,telefon,nazwa_zam,nr_zam,data_awiz,godzina_awiz,ilosc_palet,status)
           VALUES (?,?,?,?,?,?,?,?, 'w trakcie')`,
     [numer_auta, kierowca, telefon, nazwa_zam, nr_zam, data_awiz, godzina_awiz, palCount],
@@ -96,12 +97,13 @@ app.post("/api/awizacje", async (req, res) => {
           })
         );
       }
-      Promise.all(promises).then(() => res.json({ status: "ok", id: awizacjaId }))
+      Promise.all(promises)
+        .then(() => res.json({ status: "ok", id: awizacjaId }))
         .catch(err => res.status(500).json({ error: err.message }));
     });
 });
 
-// GET /api/awizacje
+// Pobierz wszystkie awizacje
 app.get("/api/awizacje", (req, res) => {
   db.all(`SELECT * FROM awizacje ORDER BY id DESC`, [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -109,7 +111,7 @@ app.get("/api/awizacje", (req, res) => {
   });
 });
 
-// GET /api/palety/:awizacja_id
+// Pobierz palety dla awizacji
 app.get("/api/palety/:awizacja_id", (req, res) => {
   db.all(`SELECT * FROM palety WHERE awizacja_id = ? ORDER BY id`, [req.params.awizacja_id], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -117,7 +119,7 @@ app.get("/api/palety/:awizacja_id", (req, res) => {
   });
 });
 
-// POST /api/palety
+// Dodaj paletę ręcznie
 app.post("/api/palety", async (req, res) => {
   const { awizacja_id, paleta_nazwa } = req.body;
   db.get(`SELECT nr_zam FROM awizacje WHERE id = ?`, [awizacja_id], async (err, row) => {
@@ -129,28 +131,34 @@ app.post("/api/palety", async (req, res) => {
     const filename = `QR_${Date.now()}.png`;
     const filepath = path.join(folder, filename);
     await QRCode.toFile(filepath, kod, { margin: 2, width: 300 });
-    db.run(`INSERT INTO palety (awizacja_id, kod_qr, status) VALUES (?,?, 'oczekuje')`, [awizacja_id, kod],
-      function (err2) { if (err2) return res.status(500).json({ error: err2.message }); res.json({ status: "ok", qr: `/uploads/${awizacja_id}/${filename}` }); });
+    db.run(`INSERT INTO palety (awizacja_id, kod_qr, status) VALUES (?,?, 'oczekuje')`,
+      [awizacja_id, kod], function (err2) {
+        if (err2) return res.status(500).json({ error: err2.message });
+        res.json({ status: "ok", qr: `/uploads/${awizacja_id}/${filename}` });
+      });
   });
 });
 
-// POST /api/upload/:awizacja_id
+// Upload zdjęcia
 app.post("/api/upload/:awizacja_id", upload.single("file"), (req, res) => {
   const awId = req.params.awizacja_id;
   const filePath = req.file ? `/uploads/${awId}/${req.file.filename}` : null;
   if (!filePath) return res.status(400).json({ error: "Brak pliku" });
   const kod_palety = req.body.kod_palety;
-  if (kod_palety) db.run(`UPDATE palety SET zdjecie = ? WHERE awizacja_id = ? AND kod_qr = ?`, [filePath, awId, kod_palety]);
+  if (kod_palety)
+    db.run(`UPDATE palety SET zdjecie = ? WHERE awizacja_id = ? AND kod_qr = ?`, [filePath, awId, kod_palety]);
   res.json({ status: "ok", file: filePath });
 });
 
-// POST /api/scan
+// Skanowanie palety
 app.post("/api/scan", (req, res) => {
   const { qr } = req.body;
   if (!qr) return res.status(400).json({ error: "Brak qr" });
+
   db.get(`SELECT * FROM palety WHERE kod_qr = ?`, [qr], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     if (!row) return res.status(404).json({ error: "Paleta nie znaleziona" });
+
     db.run(`UPDATE palety SET status = 'zeskanowana' WHERE id = ?`, [row.id]);
     db.run(`UPDATE awizacje SET zeskanowane = zeskanowane + 1 WHERE id = ?`, [row.awizacja_id], () => {
       db.get(`SELECT ilosc_palet, zeskanowane FROM awizacje WHERE id = ?`, [row.awizacja_id], (err4, arow) => {
@@ -162,7 +170,7 @@ app.post("/api/scan", (req, res) => {
   });
 });
 
-// GET /api/drukuj_qr/:awizacja_id
+// Druk PDF QR
 app.get("/api/drukuj_qr/:awizacja_id", (req, res) => {
   const awId = req.params.awizacja_id;
   const folder = path.join(UPLOADS_DIR, String(awId));
@@ -181,7 +189,17 @@ app.get("/api/drukuj_qr/:awizacja_id", (req, res) => {
   doc.end();
 });
 
-// GET /uploads/:awizacja_id/:filename
+// Pobierz plik upload
 app.get("/uploads/:awizacja_id/:filename", (req, res) => {
   const file = path.join(UPLOADS_DIR, req.params.awizacja_id, req.params.filename);
-  if (!fs.existsSync(file)) return res.status(404
+  if (!fs.existsSync(file)) return res.status(404).send("Not found");
+  res.sendFile(file);
+});
+
+// Health check
+app.get("/api/ping", (req, res) => res.json({ ok: true }));
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server started on http://localhost:${PORT}`);
+});
