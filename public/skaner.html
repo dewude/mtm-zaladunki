@@ -3,51 +3,89 @@
 <head>
 <meta charset="utf-8">
 <title>MTM - Skaner</title>
-<link rel="stylesheet" href="/style.css">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: #000;
+    font-family: Arial, sans-serif;
+  }
+  #video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* wypełnia ekran przy zachowaniu proporcji */
+    z-index: 1;
+  }
+  #log {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    color: #0f0;
+    background: rgba(0,0,0,0.5);
+    padding: 10px;
+    border-radius: 6px;
+    z-index: 2;
+    max-width: 90%;
+    font-size: 18px;
+  }
+</style>
 </head>
 <body>
-<h1>Ramp Scanner (automatyczne skanowanie)</h1>
-<video id="video" width="400" height="300" autoplay muted playsinline></video>
+
+<video id="video" autoplay muted playsinline></video>
 <div id="log"></div>
 <audio id="beep" src="/beep.mp3"></audio>
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
-const video=document.getElementById("video");
-const log=document.getElementById("log");
-const beep=document.getElementById("beep");
+const video = document.getElementById("video");
+const log = document.getElementById("log");
+const beep = document.getElementById("beep");
 let lastScanned = new Set();
 
-async function startCamera(){
-  const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-  video.srcObject = stream;
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    video.srcObject = stream;
+  } catch(e) {
+    log.innerText = "Błąd kamery: " + e.message;
+  }
 }
-startCamera();
 
-const canvas=document.createElement("canvas");
-const ctx=canvas.getContext("2d");
-
-function scan(){
-  if(video.readyState!==video.HAVE_ENOUGH_DATA) return requestAnimationFrame(scan);
-  canvas.width=video.videoWidth;
-  canvas.height=video.videoHeight;
-  ctx.drawImage(video,0,0,canvas.width,canvas.height);
-  const imageData=ctx.getImageData(0,0,canvas.width,canvas.height);
-  const code=jsQR(imageData.data,imageData.width,imageData.height);
-  if(code){
-    if(!lastScanned.has(code.data)){
+function tick() {
+  if(video.readyState === video.HAVE_ENOUGH_DATA) {
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imgData.data, canvas.width, canvas.height);
+    if(code && !lastScanned.has(code.data)) {
       lastScanned.add(code.data);
-      beep.play();
-      fetch('/api/scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({qr:code.data})})
-        .then(r=>r.json()).then(j=>{
-          log.innerHTML=`Zeskanowano: ${code.data} <br>Odp: ${j.message || ''}`;
-          setTimeout(()=>lastScanned.delete(code.data),5000);
-        });
+      beep.play().catch(()=>{});
+      log.innerHTML = "Zeskanowano: " + code.data;
+      
+      // wyślij do serwera
+      fetch("/api/scan", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({qr: code.data})
+      }).then(r=>r.json()).then(j=>{
+        console.log("Scan result:", j);
+        setTimeout(()=> lastScanned.delete(code.data), 5000);
+      });
     }
   }
-  requestAnimationFrame(scan);
+  requestAnimationFrame(tick);
 }
-requestAnimationFrame(scan);
+
+startCamera();
+requestAnimationFrame(tick);
 </script>
 </body>
 </html>
