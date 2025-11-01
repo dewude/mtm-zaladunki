@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>MTM - Awizacje</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Panel główny - Awizacje</h1>
+
+  <form id="formAwizacja">
+    <input name="nr_zam" placeholder="Numer zamówienia" required>
+    <input name="nazwa_zam" placeholder="Nazwa zamówienia" required>
+    <input name="numer_auta" placeholder="Numer auta" required>
+    <input name="kierowca" placeholder="Kierowca">
+    <input name="telefon" placeholder="Telefon">
+    <input type="date" name="data">
+    <input type="time" name="godzina">
+    <input type="number" name="ilosc_palet" placeholder="Ilość palet">
+    <button type="submit">Dodaj awizację</button>
+  </form>
+
+  <h2>Lista awizacji</h2>
+  <div id="listaAwizacji"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
