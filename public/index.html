@@ -1,37 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>MTM System Awizacji</title>
-<link rel="stylesheet" href="/style.css">
+  <meta charset="utf-8">
+  <title>MTM - System Awizacji</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<h1 style="text-align:center;">MTM System Awizacji - Strona Główna</h1>
+<h1>MTM System Awizacji - Strona Główna</h1>
 
-<div style="text-align:center; margin:20px;">
-  <button onclick="toggleForm()">Dodaj awizację</button>
-  <button onclick="loadAwizacje('aktywni')">Aktywne awizacje</button>
-  <button onclick="loadAwizacje('zakończone')">Zakończone awizacje</button>
-  <button onclick="window.location.href='/scanner.html'">Skaner</button>
-  <button onclick="window.location.href='/app_worker.html'">Panel pracownika</button>
+<div class="buttons">
+  <button onclick="showForm()">Dodaj Awizację</button>
+  <button onclick="toggleSection('active')">Aktywne Awizacje</button>
+  <button onclick="toggleSection('done')">Zakończone Awizacje</button>
+  <button onclick="location.href='/scanner.html'">Skaner</button>
+  <button onclick="location.href='/app_worker.html'">Panel Pracownika</button>
 </div>
 
-<div id="formContainer" style="display:none; text-align:center;">
+<div id="formContainer" style="display:none;">
+  <h2>Dodaj Awizację</h2>
   <form id="formAwizacja">
     <input name="nazwa_zam" placeholder="Nazwa zamówienia" required>
     <input name="nr_zam" placeholder="Numer zamówienia" required>
-    <input name="kierowca" placeholder="Kierowca" required>
-    <input name="telefon" placeholder="Telefon" required>
     <input name="numer_auta" placeholder="Numer auta" required>
+    <input name="kierowca" placeholder="Kierowca">
+    <input name="telefon" placeholder="Telefon">
     <input name="data_awiz" type="date" required>
-    <input name="ilosc_palet" type="number" placeholder="Ilość palet" value="1" required>
+    <input name="godzina_awiz" type="time">
+    <input name="ilosc_palet" type="number" placeholder="Ilość palet" value="1" min="1">
     <input name="uwagi" placeholder="Informacje dodatkowe">
-    <button type="submit">Dodaj awizację</button>
+    <button type="submit">Dodaj Awizację</button>
   </form>
 </div>
 
-<div id="awizacjeContainer" style="margin-top:20px;"></div>
+<div id="activeSection" style="display:none;">
+  <div class="section-title">Aktywne Awizacje</div>
+  <div id="activeAwizacje"></div>
+</div>
 
-<script src="/script.js"></script>
+<div id="doneSection" style="display:none;">
+  <div class="section-title">Zakończone Awizacje</div>
+  <div id="doneAwizacje"></div>
+</div>
+
+<script src="/app.js"></script>
 </body>
 </html>
