@@ -1,39 +1,64 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <title>Skaner QR - MTM</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Skaner QR - Załadunek</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { font-family: Arial; text-align: center; background: #f5f5f5; margin: 0; padding: 20px; }
+    h1 { color: #333; }
+    #reader { width: 300px; margin: 20px auto; }
+    #result { font-size: 18px; color: green; margin-top: 10px; }
+    button { padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px; background: #007bff; color: #fff; cursor: pointer; }
+    button:hover { background: #0056b3; }
+  </style>
 </head>
 <body>
-  <h1>Skaner QR</h1>
-  <video id="camera" width="300" height="200" autoplay></video>
-  <canvas id="canvas" hidden></canvas>
-  <div id="wynik"></div>
+  <h1>📦 Skaner Palet</h1>
+  <div id="reader"></div>
+  <div id="result"></div>
+  <button onclick="window.location.href='/'">⬅️ Powrót</button>
 
-  <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
   <script>
-    const video = document.getElementById("camera");
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-      .then(stream => { video.srcObject = stream; });
+    const reader = new Html5Qrcode("reader");
 
-    function scan() {
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-        if (code) {
-          window.location.href = code.data;
-          return;
+    function onScanSuccess(decodedText, decodedResult) {
+      document.getElementById("result").innerHTML = "Zeskanowano: " + decodedText;
+      
+      // WYŚLIJ DO SERWERA
+      fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qr: decodedText })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "ok") {
+          document.getElementById("result").innerHTML = "✅ Paleta zeskanowana!";
+          setTimeout(() => { location.reload(); }, 1500);
+        } else {
+          document.getElementById("result").innerHTML = "❌ Błąd: " + (data.error || "Nie znaleziono");
         }
-      }
-      requestAnimationFrame(scan);
+      })
+      .catch(err => {
+        document.getElementById("result").innerHTML = "❌ Błąd serwera";
+        console.error(err);
+      });
     }
-    scan();
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        const cameraId = devices[0].id;
+        reader.start(
+          cameraId,
+          { fps: 10, qrbox: 250 },
+          onScanSuccess
+        );
+      } else {
+        alert("Nie wykryto kamer");
+      }
+    }).catch(err => console.error(err));
   </script>
 </body>
 </html>
