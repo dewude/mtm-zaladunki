@@ -1,9 +1,35 @@
-body { font-family: Arial, sans-serif; padding:16px; background:#f6f9fc; color:#222; }
-h1 { color:#064a7b; }
-input, button { padding:8px; margin:6px 0; display:block; width:100%; max-width:420px; }
-button { background:#0b5ed7; color:white; border:none; border-radius:4px; cursor:pointer; }
-button:hover { background:#0d6efd; }
-table { width:90%; margin:auto; border-collapse:collapse; }
-th, td { border:1px solid #ccc; padding:8px; text-align:center; }
-th { background:#064a7b; color:white; }
-tr:nth-child(even) { background:#f2f2f2; }
+/* Reset i podstawy */
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#f0f2f5; color:#222; padding:20px; }
+h1 { text-align:center; margin-bottom:30px; color:#0b5ed7; font-size:2em; }
+
+/* Przyciski */
+button { 
+  padding:10px 15px; margin:5px; border:none; border-radius:6px; cursor:pointer; 
+  font-weight:600; color:#fff; background: linear-gradient(90deg,#0d6efd,#0b5ed7);
+  transition:0.2s; 
+}
+button:hover { background: linear-gradient(90deg,#0a53be,#084298); }
+
+/* Kontenery przycisków */
+.buttons { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom:20px; }
+
+/* Formularze */
+form { background:#fff; padding:20px; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1); max-width:500px; margin:0 auto 30px; }
+form input, form select { width:100%; padding:10px; margin:10px 0; border:1px solid #ccc; border-radius:5px; }
+
+/* Karty awizacji */
+.awizacja {
+  background:#fff; border-radius:10px; padding:15px 20px; margin-bottom:15px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1); transition:0.2s;
+}
+.awizacja:hover { box-shadow:0 4px 12px rgba(0,0,0,0.15); }
+
+/* Nagłówki w kartach */
+.awizacja strong { font-size:1.2em; color:#0d6efd; }
+
+/* Sekcje aktywne/zakończone */
+.section-title { font-size:1.3em; margin:15px 0; color:#0b5ed7; text-align:center; }
+
+/* Panel pracownika */
+#lista .paleta { background:#fff; padding:10px; margin-bottom:10px; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,0.1); }
