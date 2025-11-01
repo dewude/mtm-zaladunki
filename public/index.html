@@ -6,31 +6,32 @@
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h1 style="text-align:center;">MTM System Awizacji - Strona Główna</h1>
+<h1 style="text-align:center;">MTM System Awizacji - Strona Główna</h1>
 
-  <div style="text-align:center; margin:20px;">
-    <button onclick="toggleForm()">Dodaj awizację</button>
-    <button onclick="loadAwizacje('aktywni')">Aktywne awizacje</button>
-    <button onclick="loadAwizacje('zakończone')">Zakończone awizacje</button>
-    <button onclick="window.location.href='/scanner.html'">Skaner</button>
-    <button onclick="window.location.href='/app_worker.html'">Panel pracownika</button>
-  </div>
+<div style="text-align:center; margin:20px;">
+  <button onclick="toggleForm()">Dodaj awizację</button>
+  <button onclick="loadAwizacje('aktywni')">Aktywne awizacje</button>
+  <button onclick="loadAwizacje('zakończone')">Zakończone awizacje</button>
+  <button onclick="window.location.href='/scanner.html'">Skaner</button>
+  <button onclick="window.location.href='/app_worker.html'">Panel pracownika</button>
+</div>
 
-  <div id="formContainer" style="display:none; text-align:center;">
-    <form id="formAwizacja">
-      <input name="name" placeholder="Nazwa zamówienia" required>
-      <input name="orderNumber" placeholder="Numer zamówienia" required>
-      <input name="kierowca" placeholder="Kierowca" required>
-      <input name="telefon" placeholder="Telefon" required>
-      <input name="numer_auta" placeholder="Numer auta" required>
-      <input name="data_wyjazdu" type="date" required>
-      <input name="ilosc_palet" type="number" placeholder="Ilość palet" value="1" required>
-      <button type="submit">Dodaj awizację</button>
-    </form>
-  </div>
+<div id="formContainer" style="display:none; text-align:center;">
+  <form id="formAwizacja">
+    <input name="nazwa_zam" placeholder="Nazwa zamówienia" required>
+    <input name="nr_zam" placeholder="Numer zamówienia" required>
+    <input name="kierowca" placeholder="Kierowca" required>
+    <input name="telefon" placeholder="Telefon" required>
+    <input name="numer_auta" placeholder="Numer auta" required>
+    <input name="data_awiz" type="date" required>
+    <input name="ilosc_palet" type="number" placeholder="Ilość palet" value="1" required>
+    <input name="uwagi" placeholder="Informacje dodatkowe">
+    <button type="submit">Dodaj awizację</button>
+  </form>
+</div>
 
-  <div id="awizacjeContainer" style="margin-top:20px;"></div>
+<div id="awizacjeContainer" style="margin-top:20px;"></div>
 
-  <script src="/script.js"></script>
+<script src="/script.js"></script>
 </body>
 </html>
