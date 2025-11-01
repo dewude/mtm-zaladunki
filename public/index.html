@@ -1,172 +1,69 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MTM - System Awizacji</title>
-<link rel="stylesheet" href="/style.css">
-<style>
-  body { font-family: Arial; text-align: center; background: #f5f5f5; margin: 0; padding: 20px; }
-  h1 { font-size: 32px; color: #064a7b; margin-bottom: 30px; }
-  button { padding: 10px 20px; margin: 5px; font-size: 16px; border: none; border-radius: 6px; background: #0b5ed7; color: #fff; cursor: pointer; }
-  button:hover { background: #0d6efd; }
-  .awizacja { background: #fff; border: 1px solid #e3e8ef; padding: 12px; margin-bottom: 10px; border-radius: 6px; text-align: left; cursor: pointer; }
-  .awizacja:hover { background: #e9f0fb; }
-  .awizacja .details { display: none; margin-top: 8px; }
-  .completed { background: #e3ffe3; }
-  #formContainer { max-width: 600px; margin: 0 auto 20px auto; background:#fff; padding:20px; border-radius:8px; border:1px solid #e3e8ef; text-align:left; }
-  input, select { width:100%; padding:8px; margin:6px 0; box-sizing:border-box; }
-</style>
+  <meta charset="utf-8">
+  <title>MTM System Awizacji</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <h1 class="center">🚛 MTM System Awizacji - Strona Główna</h1>
 
-<h1>MTM System awizacji - Strona główna</h1>
+  <div class="center">
+    <button onclick="location.href='app_worker.html'">📦 Panel Pracownika</button>
+    <button onclick="location.href='skaner.html'">📷 Skaner</button>
+  </div>
 
-<div>
-  <button onclick="toggleSection('awizacjeList')">📦 Aktywne awizacje</button>
-  <button onclick="toggleSection('completedList')">✅ Zakończone zamówienia</button>
-  <button onclick="window.location.href='/skaner.html'">📷 Skaner palet</button>
-  <button onclick="window.location.href='/app_worker.html'">👷 Panel pracownika</button>
-</div>
+  <h2>➕ Dodaj nową awizację</h2>
+  <input id="nr" placeholder="Numer zamówienia">
+  <input id="data" type="date">
+  <input id="info" placeholder="Informacje dodatkowe">
+  <button onclick="dodajAwizacje()">Dodaj</button>
 
-<hr>
+  <h2 onclick="toggle('aktywne')" class="link">📋 Aktywne awizacje ▼</h2>
+  <div id="aktywne" class="hidden"></div>
 
-<!-- FORMULARZ DODAWANIA AWIZACJI -->
-<div id="formContainer">
-  <h2>Dodaj nową awizację</h2>
-  <form id="formAwizacja">
-    <input type="text" name="numer_auta" placeholder="Numer auta" required>
-    <input type="text" name="kierowca" placeholder="Kierowca" required>
-    <input type="text" name="telefon" placeholder="Telefon kierowcy" required>
-    <input type="text" name="nazwa_zam" placeholder="Nazwa zamówienia" required>
-    <input type="text" name="nr_zam" placeholder="Nr zamówienia" required>
-    <input type="date" name="data" placeholder="Data wyjazdu">
-    <input type="time" name="godzina" placeholder="Godzina wyjazdu">
-    <input type="number" name="ilosc_palet" placeholder="Ilość palet" value="1" min="1">
-    <textarea name="uwagi" placeholder="Dodatkowe informacje"></textarea>
-    <button type="submit">Dodaj awizację</button>
-  </form>
-</div>
+  <h2 onclick="toggle('zakonczone')" class="link">✅ Zakończone awizacje ▼</h2>
+  <div id="zakonczone" class="hidden"></div>
 
-<!-- LISTY AWIZACJI -->
-<div id="awizacjeList" style="display:none;"></div>
-<div id="completedList" style="display:none;"></div>
+  <script>
+    async function dodajAwizacje() {
+      const nr = nr.value.trim(), data = document.getElementById("data").value, info = info.value;
+      if (!nr || !data) return alert("Uzupełnij pola");
+      const res = await fetch("/api/awizacje", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nr_zam: nr, data_wyjazdu: data, info }) });
+      const j = await res.json();
+      if (j.status === "ok") { alert("Dodano awizację"); load(); }
+    }
 
-<script src="/script.js"></script>
-<script>
-// Toggle sekcji aktywne/zakończone
-function toggleSection(id){
-  const el = document.getElementById(id);
-  el.style.display = (el.style.display==='none') ? 'block' : 'none';
-}
+    function toggle(id) {
+      const el = document.getElementById(id);
+      el.classList.toggle("hidden");
+      if (!el.classList.contains("hidden")) load();
+    }
 
-// --- Pokazuje listę aktywnych awizacji ---
-async function showAwizacje() {
-  const res = await fetch('/api/awizacje');
-  const data = await res.json();
-  const container = document.getElementById('awizacjeList');
-  container.innerHTML = '<h2>Aktywne awizacje</h2>';
-  data.filter(a => a.status !== 'zakończony').forEach(a => {
-    const div = document.createElement('div');
-    div.className = 'awizacja';
-    div.innerHTML = `
-      <strong>${a.nr_zam} (${a.nazwa_zam})</strong><br>
-      Ilość palet: ${a.ilosc_palet} | Data wyjazdu: ${a.data_awiz || '-'}<br>
-      Status: ${a.status}<br>
-      <div class="details">
-        <button onclick="dodajPalete(${a.id})">➕ Dodaj paletę</button>
-        <button onclick="editAwizacja(${a.id})">✏️ Edytuj</button>
-        <button onclick="deleteAwizacja(${a.id})">🗑️ Usuń</button>
-        <button onclick="zakończAwizacje(${a.id})">✅ Zakończ awizację</button>
-        <button onclick="drukuj(${a.id})">🖨️ Drukuj QR</button>
-        <div>Data utworzenia: ${a.data_awiz || '-'} | Ilość palet: ${a.ilosc_palet}<br>
-        Dodatkowe info: ${a.uwagi || '-'}</div>
-      </div>
-    `;
-    div.onclick = e => { if(!e.target.tagName.includes('BUTTON')) {
-      const details = div.querySelector('.details');
-      details.style.display = details.style.display==='block'?'none':'block';
-    }};
-    container.appendChild(div);
-  });
-}
+    async function load() {
+      const res = await fetch("/api/awizacje");
+      const data = await res.json();
+      const a = data.filter(d => d.status === "aktywne");
+      const z = data.filter(d => d.status !== "aktywne");
 
-// --- Pokazuje zakończone zamówienia ---
-async function showCompleted() {
-  const res = await fetch('/api/awizacje');
-  const data = await res.json();
-  const container = document.getElementById('completedList');
-  container.innerHTML = '<h2>Zakończone zamówienia</h2>';
-  data.filter(a => a.status === 'zakończony').forEach(a => {
-    const div = document.createElement('div');
-    div.className='awizacja completed';
-    div.innerHTML = `<strong>${a.nr_zam} (${a.nazwa_zam})</strong><br>
-      Data wyjazdu: ${a.data_awiz} | Ilość palet: ${a.ilosc_palet}<br>
-      Dodatkowe info: ${a.uwagi || '-'}<br>
-      <button onclick="deleteAwizacja(${a.id})">🗑️ Usuń całkowicie</button>
-    `;
-    container.appendChild(div);
-  });
-}
+      document.getElementById("aktywne").innerHTML = a.map(aw => `
+        <div>
+          <b>${aw.nr_zam}</b> (${aw.data_wyjazdu})<br>${aw.info || ""}<br>
+          <button onclick="window.open('/api/drukuj_qr/${aw.id}')">QR</button>
+          <button onclick="window.open('/api/drukuj_awizacje/${aw.id}')">Drukuj Awizację</button>
+          <button onclick="usun(${aw.id})">Usuń</button>
+        </div>`).join("");
 
-// --- Formularz dodawania awizacji ---
-document.getElementById('formAwizacja').addEventListener('submit', async e=>{
-  e.preventDefault();
-  const f = e.target;
-  const payload = {
-    numer_auta: f.numer_auta.value,
-    kierowca: f.kierowca.value,
-    telefon: f.telefon.value,
-    nazwa_zam: f.nazwa_zam.value,
-    nr_zam: f.nr_zam.value,
-    data_awiz: f.data.value || '',
-    godzina_awiz: f.godzina.value || '',
-    ilosc_palet: f.ilosc_palet.value || 1,
-    uwagi: f.uwagi.value || ''
-  };
-  const res = await fetch("/api/awizacje", { 
-    method:"POST", 
-    headers:{"Content-Type":"application/json"}, 
-    body:JSON.stringify(payload)
-  });
-  const j = await res.json();
-  if(j.status==='ok') { f.reset(); alert('Dodano awizację'); showAwizacje(); showCompleted(); }
-  else alert('Błąd: '+(j.error||j.message));
-});
+      document.getElementById("zakonczone").innerHTML = z.map(aw => `<div>${aw.nr_zam} - zakończone</div>`).join("");
+    }
 
-// --- Funkcje akcji ---
-async function dodajPalete(id) {
-  const name = prompt('Nazwa palety (np. Paleta 7):'); if(!name) return;
-  const res = await fetch('/api/palety',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({awizacja_id:id,paleta_nazwa:name})});
-  const j = await res.json(); if(j.status==='ok') alert('Dodano paletę'); showAwizacje();
-}
+    async function usun(id) {
+      if (!confirm("Usunąć awizację?")) return;
+      await fetch("/api/awizacje/" + id, { method: "DELETE" });
+      load();
+    }
 
-async function editAwizacja(id) {
-  const nr = prompt('Nowy nr zamówienia:'); 
-  const data = prompt('Nowa data wyjazdu:'); 
-  if(!nr && !data) return;
-  await fetch('/api/awizacje',{ method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id:id,nr_zam:nr,data_awiz:data})});
-  showAwizacje();
-}
-
-async function deleteAwizacja(id) {
-  if(!confirm('Usunąć awizację?')) return;
-  await fetch('/api/awizacje/'+id,{ method:'DELETE' });
-  showAwizacje(); showCompleted();
-}
-
-async function zakończAwizacje(id) {
-  await fetch('/api/awizacje/zakończ/'+id,{ method:'PATCH' });
-  showAwizacje(); showCompleted();
-}
-
-function drukuj(id){ window.open('/api/drukuj_qr/'+id,'_blank'); }
-
-// --- Auto load ---
-document.addEventListener('DOMContentLoaded', ()=>{
-  showAwizacje();
-  showCompleted();
-});
-</script>
+    load();
+  </script>
 </body>
 </html>
