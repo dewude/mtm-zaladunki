@@ -1,65 +1,34 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Skaner QR - Załadunek</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <title>MTM Skaner Palet</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
-  <style>
-    body { font-family: Arial; text-align: center; background: #f5f5f5; margin: 0; padding: 20px; }
-    h1 { color: #333; }
-    #reader { width: 300px; margin: 20px auto; }
-    #result { font-size: 18px; color: green; margin-top: 10px; }
-    button { padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px; background: #007bff; color: #fff; cursor: pointer; }
-    button:hover { background: #0056b3; }
-  </style>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h1>📦 Skaner Palet</h1>
-  <div id="reader"></div>
-  <div id="result"></div>
-  <button onclick="window.location.href='/'">⬅️ Powrót</button>
+  <h1>📷 Skaner Palet</h1>
+  <div id="reader" style="width:300px;margin:auto;"></div>
+  <div id="wynik" class="center"></div>
 
   <script>
-    const reader = new Html5Qrcode("reader");
-
-    function onScanSuccess(decodedText, decodedResult) {
-      document.getElementById("result").innerHTML = "Zeskanowano: " + decodedText;
-      
-      // WYŚLIJ DO SERWERA
-      fetch("/api/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qr: decodedText })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === "ok") {
-          document.getElementById("result").innerHTML = "✅ Paleta zeskanowana!";
-          setTimeout(() => { location.reload(); }, 1500);
-        } else {
-          document.getElementById("result").innerHTML = "❌ Błąd: " + (data.error || "Nie znaleziono");
-        }
-      })
-      .catch(err => {
-        document.getElementById("result").innerHTML = "❌ Błąd serwera";
-        console.error(err);
-      });
+    function onScanSuccess(decodedText) {
+      fetch(`/api/skan/${encodeURIComponent(decodedText)}`)
+        .then(r => r.json())
+        .then(j => {
+          if (j.status === "ok") wynik.innerHTML = `✅ ${j.message}`;
+          else if (j.status === "warning") wynik.innerHTML = `⚠️ ${j.message}`;
+          else wynik.innerHTML = `❌ ${j.message}`;
+        });
     }
 
+    const html5QrCode = new Html5Qrcode("reader");
     Html5Qrcode.getCameras().then(devices => {
-      if (devices && devices.length) {
-        // wybierz kamerę tylną
-        const backCamera = devices.find(device => device.label.toLowerCase().includes("back")) || devices[0];
-        reader.start(
-          backCamera.id,
-          { fps: 10, qrbox: 250 },
-          onScanSuccess
-        );
-      } else {
-        alert("Nie wykryto kamer");
+      if (devices.length > 0) {
+        const cameraId = devices.length > 1 ? devices[1].id : devices[0].id;
+        html5QrCode.start(cameraId, { fps: 10, qrbox: 250 }, onScanSuccess);
       }
-    }).catch(err => console.error(err));
+    });
   </script>
 </body>
 </html>
