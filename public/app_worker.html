@@ -1,17 +1,59 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>MTM - Pracownik</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<title>MTM - Pracownik</title>
+<link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h1>Panel pracownika</h1>
-  <p>Lista palet i statusów.</p>
-  <div id="lista"></div>
+<h1>MTM - Pracownik (Podgląd załadunków)</h1>
+<div id="lista"></div>
 
-  <a href="skaner.html"><button>📷 Otwórz skaner</button></a>
+<script src="/script.js"></script>
+<script>
+// uruchom ładowanie
+loadAwizacjeWorker();
 
-  <script src="script.js"></script>
+async function dodajPaleteUI(awId) {
+  const palName = prompt("Nazwa nowej palety (np. Paleta 7):");
+  if (!palName) return;
+  const res = await fetch("/api/palety", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ awizacja_id: awId, paleta_nazwa: palName })
+  });
+  const j = await res.json();
+  if (j.status === "ok") alert("Dodano paletę i wygenerowano QR");
+  loadAwizacjeWorker();
+}
+
+async function uploadZdjecie(awId, kodPalety) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.onchange = async () => {
+    const file = input.files[0];
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("kod_palety", kodPalety || "");
+    fd.append("awizacja_id", awId);
+    const res = await fetch(`/api/upload/${awId}`, { method: "POST", body: fd });
+    const j = await res.json();
+    if (j.status === "ok") alert("Zdjęcie wysłane");
+    loadAwizacjeWorker();
+  };
+  input.click();
+}
+
+async function drukujQRWorker(awId, paletaKod) {
+  window.open(`/api/drukuj_qr/${awId}?paleta=${encodeURIComponent(paletaKod)}`, "_blank");
+}
+
+async function zakoncz(awId) {
+  const confirmEnd = confirm("Zakończyć załadunek?");
+  if (!confirmEnd) return;
+  alert("Zakończenie przeniesione do panelu admina (demo).");
+}
+</script>
 </body>
 </html>
