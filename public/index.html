@@ -2,27 +2,112 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>MTM - Awizacje</title>
-  <link rel="stylesheet" href="style.css">
+  <title>MTM - Panel główny</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/script.js"></script>
 </head>
 <body>
-  <h1>Panel główny - Awizacje</h1>
+  <h1>📋 Panel Główny MTM</h1>
 
+  <!-- FORMULARZ DODAWANIA AWIZACJI -->
+  <h2>Dodaj nową awizację</h2>
   <form id="formAwizacja">
-    <input name="nr_zam" placeholder="Numer zamówienia" required>
-    <input name="nazwa_zam" placeholder="Nazwa zamówienia" required>
-    <input name="numer_auta" placeholder="Numer auta" required>
-    <input name="kierowca" placeholder="Kierowca">
-    <input name="telefon" placeholder="Telefon">
-    <input type="date" name="data">
-    <input type="time" name="godzina">
-    <input type="number" name="ilosc_palet" placeholder="Ilość palet">
+    <input type="text" name="numer_auta" placeholder="Numer auta" required>
+    <input type="text" name="kierowca" placeholder="Kierowca" required>
+    <input type="text" name="telefon" placeholder="Telefon kierowcy" required>
+    <input type="text" name="nazwa_zam" placeholder="Nazwa zamówienia" required>
+    <input type="text" name="nr_zam" placeholder="Nr zamówienia" required>
+    <input type="date" name="data" placeholder="Data awizacji">
+    <input type="time" name="godzina" placeholder="Godzina awizacji">
+    <input type="number" name="ilosc_palet" placeholder="Ilość palet" value="1" min="1">
     <button type="submit">Dodaj awizację</button>
   </form>
 
+  <hr>
+
+  <!-- LISTA AWIZACJI -->
   <h2>Lista awizacji</h2>
   <div id="listaAwizacji"></div>
 
-  <script src="script.js"></script>
+  <script>
+    async function loadAwizacje() {
+      const res = await fetch("/api/awizacje");
+      const arr = await res.json();
+      const container = document.getElementById("listaAwizacji");
+      container.innerHTML = "";
+      arr.forEach(a => {
+        const div = document.createElement("div");
+        div.style.background = "#fff";
+        div.style.padding = "10px";
+        div.style.marginBottom = "8px";
+        div.style.borderRadius = "6px";
+        div.innerHTML = `
+          <strong>${a.nr_zam}</strong> (${a.nazwa_zam}) - ${a.numer_auta} <br>
+          Palet: ${a.ilosc_palet} | Zeskanowane: ${a.zeskanowane} | Status: ${a.status} <br>
+          <a href="/skaner.html" target="_blank">📷 Otwórz skaner</a> |
+          <a href="/app_worker.html" target="_blank">👷 Panel pracownika</a> |
+          <button onclick="dodajPalete(${a.id})">➕ Dodaj paletę</button>
+          <button onclick="drukuj(${a.id})">🖨️ Drukuj QR</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    document.getElementById('formAwizacja').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const payload = {
+        numer_auta: f.numer_auta.value,
+        kierowca: f.kierowca.value,
+        telefon: f.telefon.value,
+        nazwa_zam: f.nazwa_zam.value,
+        nr_zam: f.nr_zam.value,
+        data_awiz: f.data.value || '',
+        godzina_awiz: f.godzina.value || '',
+        ilosc_palet: f.ilosc_palet.value || 1
+      };
+      const res = await fetch("/api/awizacje", { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(payload) 
+      });
+      const j = await res.json();
+      if (j.status === "ok") {
+        alert("Dodano awizację");
+        f.reset();
+        loadAwizacje();
+      } else {
+        alert("Błąd: " + (j.error || j.message));
+      }
+    });
+
+    // autoload listy
+    document.addEventListener("DOMContentLoaded", () => {
+      loadAwizacje();
+      setInterval(loadAwizacje, 5000);
+    });
+
+    async function drukuj(awId) {
+      window.open(`/api/drukuj_qr/${awId}`, "_blank");
+    }
+
+    async function dodajPalete(awId) {
+      const name = prompt("Nazwa palety (np. Paleta 7):");
+      if (!name) return;
+      const res = await fetch("/api/palety", { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify({ awizacja_id: awId, paleta_nazwa: name })
+      });
+      const j = await res.json();
+      if (j.status === "ok") {
+        alert("Dodano paletę.");
+        loadAwizacje();
+      } else {
+        alert("Błąd: " + (j.error || j.msg));
+      }
+    }
+  </script>
 </body>
 </html>
