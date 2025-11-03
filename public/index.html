@@ -1,40 +1,45 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MTM System Awizacji</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="app.js" defer></script>
+  <meta charset="utf-8">
+  <title>MTM System awizacji</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <center>
-  <header>
-    <h1>🚚 MTM System Awizacji</h1>
-    <nav>
-      <button onclick="showSection('addForm')">➕ Dodaj Awizację</button>
-      <button onclick="loadAwizacje('aktywne')">📋 Aktywne Awizacje</button>
-      <button onclick="loadAwizacje('zakonczone')">✅ Zakończone Awizacje</button>
-      <button onclick="location.href='skaner.html'">📱 Skaner</button>
-      <button onclick="location.href='app_worker.html'">👷 Panel Pracownika</button>
-    </nav>
-  </header>
+  <h1>MTM System awizacji - Strona główna</h1>
 
-  <main>
-    <section id="addForm" class="hidden">
-      <h2>Dodaj Awizację</h2>
-      <form id="awizacjaForm">
-        <input type="text" name="nazwa" placeholder="Nazwa zamówienia" required />
-        <input type="text" name="numer" placeholder="Numer zamówienia" required />
-        <input type="date" name="data_wyjazdu" required />
-        <input type="text" name="dane_kierowcy" placeholder="Dane kierowcy" />
-        <input type="number" name="ilosc_palet" placeholder="Ilość palet" required min="1" />
-        <textarea name="informacje" placeholder="Informacje dodatkowe"></textarea>
-        <button type="submit">💾 Zapisz Awizację</button>
-      </form>
-    </section>
+  <button id="showFormBtn">Dodaj awizację</button>
+  <div id="formContainer" style="display:none;">
+    <form id="formAwizacja">
+      <input type="text" name="nazwa_zam" placeholder="Nazwa zamówienia" required>
+      <input type="text" name="nr_zam" placeholder="Numer zamówienia" required>
+      <input type="text" name="numer_auta" placeholder="Numer auta" required>
+      <input type="text" name="kierowca" placeholder="Kierowca" required>
+      <input type="text" name="telefon" placeholder="Telefon kierowcy">
+      <input type="date" name="data" placeholder="Data wyjazdu">
+      <input type="number" name="ilosc_palet" placeholder="Ilość palet" value="1" min="1">
+      <textarea name="uwagi" placeholder="Dodatkowe informacje"></textarea>
+      <button type="submit">Dodaj awizację</button>
+    </form>
+  </div>
 
-    <section id="awizacjeList"></section>
-  </main>
+  <h2>Aktywne awizacje</h2>
+  <div id="listaAwizacji"></div>
+
+  <h2>Zakończone awizacje</h2>
+  <div id="listaZakonczone"></div>
+
+  <div style="margin-top:20px;">
+    <button onclick="window.location.href='/skaner.html'">Skaner</button>
+    <button onclick="window.location.href='/app_worker.html'">Panel pracownika</button>
+  </div>
+
+  <script src="/script.js"></script>
+  <script>
+    document.getElementById('showFormBtn').addEventListener('click',()=>{
+      const fc = document.getElementById('formContainer');
+      fc.style.display = fc.style.display==='none'?'block':'none';
+    });
+  </script>
 </body>
 </html>
