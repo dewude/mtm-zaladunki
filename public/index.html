@@ -2,46 +2,44 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>MTM - System Awizacji</title>
+  <title>MTM System awizacji</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<h1>MTM System Awizacji - Strona Główna</h1>
+  <h1>MTM System awizacji - Strona główna</h1>
 
-<div class="buttons">
-  <button onclick="showForm()">Dodaj Awizację</button>
-  <button onclick="toggleSection('active')">Aktywne Awizacje</button>
-  <button onclick="toggleSection('done')">Zakończone Awizacje</button>
-  <button onclick="location.href='/skaner.html'">Skaner</button>
-  <button onclick="location.href='/app_worker.html'">Panel Pracownika</button>
-</div>
+  <button id="showFormBtn">Dodaj awizację</button>
+  <div id="formContainer" style="display:none;">
+    <form id="formAwizacja">
+      <input type="text" name="nazwa_zam" placeholder="Nazwa zamówienia" required>
+      <input type="text" name="nr_zam" placeholder="Numer zamówienia" required>
+      <input type="text" name="numer_auta" placeholder="Numer auta" required>
+      <input type="text" name="kierowca" placeholder="Kierowca" required>
+      <input type="text" name="telefon" placeholder="Telefon kierowcy">
+      <input type="date" name="data" placeholder="Data wyjazdu">
+      <input type="number" name="ilosc_palet" placeholder="Ilość palet" value="1" min="1">
+      <textarea name="uwagi" placeholder="Dodatkowe informacje"></textarea>
+      <button type="submit">Dodaj awizację</button>
+    </form>
+  </div>
 
-<div id="formContainer" style="display:none;">
-  <h2>Dodaj Awizację</h2>
-  <form id="formAwizacja">
-    <input name="nazwa_zam" placeholder="Nazwa zamówienia" required>
-    <input name="nr_zam" placeholder="Numer zamówienia" required>
-    <input name="numer_auta" placeholder="Numer auta" required>
-    <input name="kierowca" placeholder="Kierowca">
-    <input name="telefon" placeholder="Telefon">
-    <input name="data_awiz" type="date" required>
-    <input name="godzina_awiz" type="time">
-    <input name="ilosc_palet" type="number" placeholder="Ilość palet" value="1" min="1">
-    <input name="uwagi" placeholder="Informacje dodatkowe">
-    <button type="submit">Dodaj Awizację</button>
-  </form>
-</div>
+  <h2>Aktywne awizacje</h2>
+  <div id="listaAwizacji"></div>
 
-<div id="activeSection" style="display:none;">
-  <div class="section-title">Aktywne Awizacje</div>
-  <div id="activeAwizacje"></div>
-</div>
+  <h2>Zakończone awizacje</h2>
+  <div id="listaZakonczone"></div>
 
-<div id="doneSection" style="display:none;">
-  <div class="section-title">Zakończone Awizacje</div>
-  <div id="doneAwizacje"></div>
-</div>
+  <div style="margin-top:20px;">
+    <button onclick="window.location.href='/skaner.html'">Skaner</button>
+    <button onclick="window.location.href='/app_worker.html'">Panel pracownika</button>
+  </div>
 
-<script src="/app.js"></script>
+  <script src="/script.js"></script>
+  <script>
+    document.getElementById('showFormBtn').addEventListener('click',()=>{
+      const fc = document.getElementById('formContainer');
+      fc.style.display = fc.style.display==='none'?'block':'none';
+    });
+  </script>
 </body>
 </html>
