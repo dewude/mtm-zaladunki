@@ -1,31 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="pl">
 <head>
-<meta charset="utf-8">
-<title>Panel Pracownika</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MTM - Panel pracownika</title>
 <link rel="stylesheet" href="/style.css">
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;padding:16px;background:#f5f7fb;color:#222}
+  h1{text-align:center;color:#0b5ed7}
+  .card{background:#fff;padding:12px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:10px}
+  .paleta{padding:8px;border-radius:6px;margin:6px 0;background:#fafafa;border:1px solid #eee}
+  .paleta.kk{background:#e8ffea;border-color:#bff0bf}
+  .paleta.err{background:#ffecec;border-color:#ffbcbc}
+  #refreshInfo{font-size:13px;color:#666;text-align:center;margin-bottom:12px}
+</style>
 </head>
 <body>
-<h1>Panel Pracownika</h1>
-<div id="lista"></div>
+  <h1>Panel pracownika</h1>
+  <div id="refreshInfo">Auto-odświeżanie: włączone (co 2s)</div>
+  <div id="lista"></div>
+  <div style="text-align:center;margin-top:12px"><button onclick="location.href='index.html'">Powrót</button></div>
+
 <script>
-async function loadPalety(){
-  const res=await fetch('/api/awizacje');
-  const awizacje=await res.json();
-  const lista=document.getElementById('lista'); lista.innerHTML='';
-  for(const a of awizacje){
-    const div=document.createElement('div'); div.className='awizacja';
-    div.innerHTML=`<strong>${a.nazwa_zam} ${a.nr_zam}</strong><br>Ilość palet: ${a.ilosc_palet} Zeskanowane: ${a.zeskanowane}<br>`;
-    const pRes=await fetch(`/api/palety/${a.id}`); const palety=await pRes.json();
-    palety.forEach(p=>{
-      const pDiv=document.createElement('div'); pDiv.className='paleta';
-      pDiv.innerHTML=`${p.kod_qr} - ${p.status}`;
-      div.appendChild(pDiv);
-    });
-    lista.appendChild(div);
+let pollInterval = null;
+
+async function loadAwizacjeWorker() {
+  try {
+    const res = await fetch('/api/awizacje');
+    const arr = await res.json();
+    const container = document.getElementById('lista');
+    container.innerHTML = '';
+    for(const a of arr) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<strong>${a.nazwa} — ${a.numer}</strong><br>
+                        Data: ${a.data_wyjazdu || '-'} | Palet: ${a.ilosc_palet || a.ilosc_palety || 0} | Zeskanowane: ${a.zeskanowane || 0}<br>
+                        <div id="palety-${a.id}"></div>
+                        <div style="margin-top:8px">
+                          <button onclick="drukujQR(${a.id})">Drukuj wszystkie QR</button>
+                          <button onclick="drukujAwizacje(${a.id})">Drukuj awizację</button>
+                          <button onclick="usunAwizacje(${a.id})">Usuń awizację</button>
+                        </div>`;
+      container.appendChild(card);
+
+      // load palety per awizacja
+      const palCol = document.getElementById(`palety-${a.id}`);
+      palCol.innerHTML = 'Ładowanie palet...';
+      try {
+        const pRes = await fetch(`/api/palety/${a.id}`);
+        const palety = await pRes.json();
+        palCol.innerHTML = '';
+        palety.forEach(p=>{
+          const pdiv = document.createElement('div');
+          pdiv.className = 'paleta ' + (p.zeskanowana ? 'kk' : '');
+          pdiv.textContent = `${p.numer || p.kod_qr || 'Paleta'} — ${p.zeskanowana ? 'ZESKANOWANA' : 'OCZEKUJE'}`;
+          palCol.appendChild(pdiv);
+        });
+      } catch(e) { palCol.innerHTML = 'Błąd ładowania palet'; }
+    }
+  } catch(e) {
+    document.getElementById('lista').innerHTML = '<div class="card">Błąd pobierania awizacji</div>';
   }
 }
-loadPalety();
+
+function startPolling() {
+  if(pollInterval) clearInterval(pollInterval);
+  loadAwizacjeWorker();
+  pollInterval = setInterval(loadAwizacjeWorker, 2000);
+}
+function stopPolling(){ if(pollInterval) clearInterval(pollInterval); pollInterval = null; }
+
+function drukujQR(id){ window.open(`/api/drukuj_qr/${id}`,'_blank'); }
+function drukujAwizacje(id){ window.open(`/api/drukuj_awizacje/${id}`,'_blank'); }
+
+async function usunAwizacje(id){
+  if(!confirm('Na pewno usunąć awizację?')) return;
+  try {
+    await fetch(`/api/awizacje/${id}`, { method: 'DELETE' });
+    alert('Usunięto');
+    loadAwizacjeWorker();
+  } catch(e) { alert('Błąd usuwania'); }
+}
+
+document.addEventListener('DOMContentLoaded', ()=> startPolling());
+window.addEventListener('beforeunload', ()=> stopPolling());
 </script>
 </body>
 </html>
